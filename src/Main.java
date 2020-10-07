@@ -4,10 +4,7 @@ import model.DownloadResult;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -17,27 +14,21 @@ public class Main {
         int finishCounter = 0;
         long start = Calendar.getInstance().getTimeInMillis();
 
-        List<Future<DownloadResult>> downloadResults = new ArrayList<>();
-        ExecutorService service = Executors.newFixedThreadPool(3000);
+        ExecutorService downloadService = Executors.newFixedThreadPool(30);
+        ExecutorService calcService = Executors.newFixedThreadPool(30);
+        BlockingDeque<Future<CalculateResult>> queue = new LinkedBlockingDeque<>();
+
         for (int i = 0; i < 3000; i++) {
-            DownloadCallable task = new DownloadCallable(d, i);
-            Future<DownloadResult> futureResult = service.submit(task);
-            downloadResults.add(futureResult);
+            DownloadCallable task = new DownloadCallable(d, i, queue, calcService, c);
+            downloadService.submit(task);
         }
-        service.shutdown();
-
-        ExecutorService calculateService = Executors.newFixedThreadPool(8);
-        List<Future<CalculateResult>> calcResults = new ArrayList<>();
-
-        for (Future<DownloadResult> futureResult : downloadResults) {
-            calcResults.add(calculateService.submit(new CalculateCallable(c, futureResult.get())));
-        }
-
-        for (Future<CalculateResult> result : calcResults) {
-            if (result.get().found) {
+        for (Future<CalculateResult> calcResult : queue) {
+            if (calcResult.get().found) {
                 finishCounter++;
             }
         }
+        downloadService.shutdown();
+        calcService.shutdown();
 
         long end = Calendar.getInstance().getTimeInMillis();
 
