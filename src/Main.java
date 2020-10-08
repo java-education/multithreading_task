@@ -32,6 +32,7 @@ public class Main {
         for (Future<DownloadResult> futureResult : downloadResults) {
             calcResults.add(calculateService.submit(new CalculateCallable(c, futureResult.get())));
         }
+        calculateService.shutdown();
 
         for (Future<CalculateResult> result : calcResults) {
             if (result.get().found) {
