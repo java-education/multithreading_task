@@ -1,47 +1,38 @@
 import model.CalculateResult;
 import model.DownloadResult;
+import notification.NotifyService;
+import notification.impl.NotifyServiceImpl;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException, ExecutionException {
-        Download d = new Download();
-        Calculate c = new Calculate();
-        int finishCounter = 0;
+    public static void main(String[] args) throws InterruptedException {
+        int tasksCount = 30000;
+
         long start = Calendar.getInstance().getTimeInMillis();
 
-        List<Future<DownloadResult>> downloadResults = new ArrayList<>();
-        ExecutorService service = Executors.newFixedThreadPool(3000);
-        for (int i = 0; i < 3000; i++) {
-            DownloadCallable task = new DownloadCallable(d, i);
-            Future<DownloadResult> futureResult = service.submit(task);
-            downloadResults.add(futureResult);
-        }
-        service.shutdown();
+        NotifyService<CalculateResult> calculateNotifyService = new NotifyServiceImpl<>();
+        NotifyService<DownloadResult> downloadNotifyService = new NotifyServiceImpl<>();
 
-        ExecutorService calculateService = Executors.newFixedThreadPool(8);
-        List<Future<CalculateResult>> calcResults = new ArrayList<>();
+        CalculationService calculationService = new CalculationService(calculateNotifyService);
+        downloadNotifyService.attach(calculationService);
 
-        for (Future<DownloadResult> futureResult : downloadResults) {
-            calcResults.add(calculateService.submit(new CalculateCallable(c, futureResult.get())));
-        }
+        //todo run statistic reporter
 
-        for (Future<CalculateResult> result : calcResults) {
-            if (result.get().found) {
-                finishCounter++;
-            }
-        }
+        DownloadService downloadService = new DownloadService(downloadNotifyService, tasksCount);
+
+        downloadService.run();
+
+        downloadService.awaitTermination();
+        calculationService.awaitTermination();
 
         long end = Calendar.getInstance().getTimeInMillis();
 
-        System.out.println("Total success checks: " + finishCounter);
+        System.out.println("Total success checks: " );  //todo receive and print results
+
         System.out.println("Time: " + (end - start)  + " ms");
     }
+
 }
+
