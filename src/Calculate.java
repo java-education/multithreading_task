@@ -4,6 +4,7 @@ import notification.NotifyService;
 
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Calculate implements Callable<CalculateResult> {
 
@@ -16,12 +17,10 @@ public class Calculate implements Callable<CalculateResult> {
     }
 
     public CalculateResult calculate() {
-        Random r = new Random();
-
         CalculateResult result = new CalculateResult();
         result.id = download.id;
         for (int i = 0; i < 200000; i++) {
-            int check = r.nextInt(100000);
+            int check = ThreadLocalRandom.current().nextInt(100000);
             if (download.check(check)) {
                 result.found = true;
                 notifyService.notify(result);
