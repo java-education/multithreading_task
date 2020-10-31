@@ -17,34 +17,13 @@ public class Main {
             final int index = i;
             completableFutures.add(
                     CompletableFuture
-                            .supplyAsync(() -> downloadTask(index))
-                            .thenApplyAsync(downloadResult -> calculateTask(finishCounter, downloadResult))
+                            .supplyAsync(() -> TaskRunner.downloadTask(index))
+                            .thenApplyAsync(downloadResult -> TaskRunner.calculateTask(finishCounter, downloadResult))
             );
         }
         completableFutures.forEach(CompletableFuture::join);
         System.out.println("Total success checks: " + finishCounter);
         Calendar stop = Calendar.getInstance();
         System.out.println("Total time: " + (stop.getTimeInMillis() - start.getTimeInMillis()) + " ms");
-    }
-
-    private static DownloadResult downloadTask(int index) {
-        Download d = new Download(index);
-        DownloadResult downloadResult = null;
-        try {
-            downloadResult = d.downloadNext();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return downloadResult;
-    }
-
-    private static AtomicInteger calculateTask(AtomicInteger finishCounter, DownloadResult downloadResult) {
-        Calculate c = new Calculate(downloadResult);
-        CalculateResult calculateResult = c.calculate();
-
-        if (calculateResult.found) {
-            finishCounter.incrementAndGet();
-        }
-        return finishCounter;
     }
 }
