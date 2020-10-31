@@ -21,7 +21,7 @@ public class Main {
                             .thenApplyAsync(downloadResult -> TaskRunner.calculateTask(finishCounter, downloadResult))
             );
         }
-        completableFutures.forEach(CompletableFuture::join);
+        CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
         System.out.println("Total success checks: " + finishCounter);
         Calendar stop = Calendar.getInstance();
         System.out.println("Total time: " + (stop.getTimeInMillis() - start.getTimeInMillis()) + " ms");
