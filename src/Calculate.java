@@ -2,8 +2,9 @@ import model.CalculateResult;
 import model.DownloadResult;
 
 import java.util.Random;
+import java.util.concurrent.Callable;
 
-public class Calculate {
+public class Calculate implements Callable<CalculateResult> {
 
     private final DownloadResult downloadResult;
 
@@ -25,5 +26,10 @@ public class Calculate {
         result.found = true;
 
         return result;
+    }
+
+    @Override
+    public CalculateResult call() throws Exception {
+        return calculate();
     }
 }

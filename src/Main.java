@@ -1,4 +1,5 @@
 import model.CalculateResult;
+import model.DownloadResult;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -13,18 +14,26 @@ public class Main {
 
         int finishCounter = 0;
 
-        ExecutorService service = Executors.newFixedThreadPool(8);
-        List<Future<CalculateResult>> calcResults = new ArrayList<>();
-
-        for (int i = 0; i < 100; i++) {
-            Callable<CalculateResult> bigTask = new BigTask(i);
-            Future<CalculateResult> futureResult = service.submit(bigTask);
-            calcResults.add(futureResult);
+        List<Future<DownloadResult>> downloadResults = new ArrayList<>();
+        ExecutorService downloadService = Executors.newFixedThreadPool(8);
+        for (int i = 0; i < 1000; i++) {
+            Callable<DownloadResult> downloadTask = new Download(i);
+            Future<DownloadResult> dResult = downloadService.submit(downloadTask);
+            downloadResults.add(dResult);
         }
-        service.shutdown();
+        downloadService.shutdown();
 
-        for (Future<CalculateResult> result : calcResults) {
-            if (result.get().found) {
+        List<Future<CalculateResult>> calculateResults = new ArrayList<>();
+        ExecutorService calculateService = Executors.newFixedThreadPool(8);
+        for (Future<DownloadResult> dResult : downloadResults) {
+            Callable<CalculateResult> calculateTask = new Calculate(dResult.get());
+            Future<CalculateResult> cResult = calculateService.submit(calculateTask);
+            calculateResults.add(cResult);
+        }
+        calculateService.shutdown();
+
+        for (Future<CalculateResult> cResult : calculateResults) {
+            if (cResult.get().found) {
                 finishCounter++;
             }
         }
