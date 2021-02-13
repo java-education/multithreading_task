@@ -15,37 +15,15 @@ public class Main {
 
 		int finishCounter = 0;
 
-//
-//		IntStream.range(0, 1000).mapToObj(i -> new FutureTask(() -> new Download(i).downloadNext()));
-//
-//		List<Future<DownloadResult>> futuresList = new ArrayList<>();
 		ExecutorService executorDownload = Executors.newFixedThreadPool(10);
-		ExecutorService executorCalculate = Executors.newFixedThreadPool(10);
+		ExecutorService executorCalculate = Executors.newFixedThreadPool(20);
+		//ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
 		CompletionService<DownloadResult> completionDownloadService =
 				new ExecutorCompletionService<>(executorDownload);
 		CompletionService<CalculateResult> completionCalculateService =
 				new ExecutorCompletionService<>(executorCalculate);
 
-		for (int i = 0; i < 1000; i++) {
-
-//			int id = i;
-//			FutureTask<DownloadResult> futureTask = new FutureTask<>(() -> new Download(id).downloadNext());
-//
-//			Callable<DownloadResult> task = new Download(i);
-//			Future<DownloadResult> future = executor.submit(task);
-//			futuresList.add(future);
-			completionDownloadService.submit(new Download(i));
-
-//			Download d = new Download(i);
-//			DownloadResult downloadResult = d.downloadNext();
-//
-//			Calculate c = new Calculate(downloadResult);
-//			CalculateResult calculateResult = c.calculate();
-//
-//			if (calculateResult.found) {
-//				finishCounter++;
-//			}
-		}
+		IntStream.range(0, 1000).forEach(i -> completionDownloadService.submit(new Download(i)));
 
 		int received = 0;
 
