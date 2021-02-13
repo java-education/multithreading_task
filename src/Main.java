@@ -1,9 +1,7 @@
 import model.CalculateResult;
 import model.DownloadResult;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
@@ -17,7 +15,6 @@ public class Main {
 
 		ExecutorService executorDownload = Executors.newFixedThreadPool(10);
 		ExecutorService executorCalculate = Executors.newFixedThreadPool(20);
-		//ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
 		CompletionService<DownloadResult> completionDownloadService =
 				new ExecutorCompletionService<>(executorDownload);
 		CompletionService<CalculateResult> completionCalculateService =
@@ -26,20 +23,22 @@ public class Main {
 		IntStream.range(0, 1000).forEach(i -> completionDownloadService.submit(new Download(i)));
 
 		int received = 0;
+		boolean isDownloadFinished = false;
 
 		while (finishCounter < 1000) {
 			if (received < 1000) {
-				Future<DownloadResult> downloadResultFuture = completionDownloadService.take();
-				if (downloadResultFuture.isDone()) {
+				Future<DownloadResult> downloadResultFuture = completionDownloadService.poll();
+				if (downloadResultFuture != null) {
 					downloadResultFuture.cancel(true);
 					received++;
 					completionCalculateService.submit(new Calculate(downloadResultFuture.get()));
 				}
-			} else {
+			} else if (!isDownloadFinished) {
+				isDownloadFinished = true;
 				executorDownload.shutdown();
 			}
-			Future<CalculateResult> calculateResultFuture = completionCalculateService.take();
-			if (calculateResultFuture.isDone()) {
+			Future<CalculateResult> calculateResultFuture = completionCalculateService.poll();
+			if (calculateResultFuture != null) {
 				if (calculateResultFuture.get().found) {
 					calculateResultFuture.cancel(true);
 					finishCounter++;
