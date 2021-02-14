@@ -14,24 +14,22 @@ public class Main {
 		Calendar start = Calendar.getInstance();
 
 		int finishCounter = 0;
+		int TASK_NUMBER = 1000;
 
 		ExecutorService executorDownload = Executors.newFixedThreadPool(10);
 		ExecutorService executorCalculate = Executors.newFixedThreadPool(20);
-		List<Future<DownloadResult>> futures = new ArrayList<>(1000);
-		List<Future<CalculateResult>> futuresCalc = new ArrayList<>(1000);
+		List<Future<DownloadResult>> futures = new ArrayList<>(TASK_NUMBER);
+		List<Future<CalculateResult>> futuresCalc = new ArrayList<>(TASK_NUMBER);
 
-//		Thread createDownloadTasks = new Thread(() -> {
-//			IntStream.range(0, 1000).forEach(i -> executorDownload.submit(new Download(i)));
-//			executorDownload.shutdown();
-//		});
-		for (int i = 0; i < 1000; i++) {
-			futures.add(executorDownload.submit(new Download(i)));
-		}
+
+		IntStream.range(0, TASK_NUMBER).forEach(i -> futures.add(executorDownload.submit(new Download(i))));
 		executorDownload.shutdown();
+
 		for (Future<DownloadResult> f : futures) {
 			futuresCalc.add(executorCalculate.submit(new Calculate(f.get())));
 		}
 		executorCalculate.shutdown();
+
 		for (Future<CalculateResult> f : futuresCalc) {
 			if (f.get().found) {
 				finishCounter++;
