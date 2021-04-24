@@ -2,20 +2,33 @@ import model.CalculateResult;
 import model.DownloadResult;
 
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 
-public class Calculate {
-    public CalculateResult calculate(DownloadResult download) {
-        Random r = new Random();
+public class Calculate implements Callable<CalculateResult> {
 
+    private final DownloadResult downloadResult;
+
+    public Calculate(DownloadResult downloadResult) {
+        this.downloadResult = downloadResult;
+    }
+
+    public CalculateResult calculate() {
+        Random r = ThreadLocalRandom.current();
         CalculateResult result = new CalculateResult();
-        result.id = download.id;
-        for (int i = 0; i < 200000; i++) {
+        result.id = downloadResult.id;
+        while (true) {
             int check = r.nextInt(100000);
-            if (download.check(check)) {
+            if (downloadResult.check(check)) {
                 result.found = true;
                 return result;
             }
         }
-        return result;
     }
+
+    @Override
+    public CalculateResult call() {
+        return calculate();
+    }
+
 }

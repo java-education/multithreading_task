@@ -12,15 +12,14 @@ import java.util.concurrent.Future;
 public class Main {
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-        Download d = new Download();
-        Calculate c = new Calculate();
         int finishCounter = 0;
-        long start = Calendar.getInstance().getTimeInMillis();
+        long start = System.currentTimeMillis();
 
         List<Future<DownloadResult>> downloadResults = new ArrayList<>();
+
         ExecutorService service = Executors.newFixedThreadPool(3000);
         for (int i = 0; i < 3000; i++) {
-            DownloadCallable task = new DownloadCallable(d, i);
+            Download task = new Download(i);
             Future<DownloadResult> futureResult = service.submit(task);
             downloadResults.add(futureResult);
         }
@@ -30,8 +29,11 @@ public class Main {
         List<Future<CalculateResult>> calcResults = new ArrayList<>();
 
         for (Future<DownloadResult> futureResult : downloadResults) {
-            calcResults.add(calculateService.submit(new CalculateCallable(c, futureResult.get())));
+            Calculate task = new Calculate(futureResult.get());
+            calcResults.add(calculateService.submit(task));
         }
+
+        calculateService.shutdown();
 
         for (Future<CalculateResult> result : calcResults) {
             if (result.get().found) {
@@ -39,7 +41,7 @@ public class Main {
             }
         }
 
-        long end = Calendar.getInstance().getTimeInMillis();
+        long end = System.currentTimeMillis();
 
         System.out.println("Total success checks: " + finishCounter);
         System.out.println("Time: " + (end - start)  + " ms");
