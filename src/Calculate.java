@@ -8,9 +8,11 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Calculate implements Callable<CalculateResult> {
 
     private final DownloadResult downloadResult;
+    NotificationManager<CalculateResult> notificationManager;
 
-    public Calculate(DownloadResult downloadResult) {
+    public Calculate(DownloadResult downloadResult, NotificationManager<CalculateResult> notificationManager) {
         this.downloadResult = downloadResult;
+        this.notificationManager = notificationManager;
     }
 
     public CalculateResult calculate() {
@@ -21,6 +23,7 @@ public class Calculate implements Callable<CalculateResult> {
             int check = r.nextInt(100000);
             if (downloadResult.check(check)) {
                 result.found = true;
+                notificationManager.notify(result);
                 return result;
             }
         }

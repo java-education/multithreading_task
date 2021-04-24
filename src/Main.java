@@ -1,49 +1,44 @@
 import model.CalculateResult;
 import model.DownloadResult;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException, ExecutionException {
-        int finishCounter = 0;
+    public static void main(String[] args) throws InterruptedException {
+        long finishCounter = 0;
         long start = System.currentTimeMillis();
 
-        List<Future<DownloadResult>> downloadResults = new ArrayList<>();
+        NotificationManager<CalculateResult> notificationManagerCalculate = new NotificationManagerImpl<>();
 
-        ExecutorService service = Executors.newFixedThreadPool(3000);
-        for (int i = 0; i < 3000; i++) {
-            Download task = new Download(i);
-            Future<DownloadResult> futureResult = service.submit(task);
-            downloadResults.add(futureResult);
-        }
-        service.shutdown();
+        NotificationManager<DownloadResult> notificationManagerDowload = new NotificationManagerImpl<>();
+        CalculateService calculateService = new CalculateService(notificationManagerCalculate);
+        notificationManagerDowload.subscribe(calculateService);
 
-        ExecutorService calculateService = Executors.newFixedThreadPool(8);
-        List<Future<CalculateResult>> calcResults = new ArrayList<>();
+        ResultService resultService = new ResultService();
+        notificationManagerCalculate.subscribe(resultService);
 
-        for (Future<DownloadResult> futureResult : downloadResults) {
-            Calculate task = new Calculate(futureResult.get());
-            calcResults.add(calculateService.submit(task));
-        }
+        runDownloads(notificationManagerDowload);
 
-        calculateService.shutdown();
-
-        for (Future<CalculateResult> result : calcResults) {
-            if (result.get().found) {
-                finishCounter++;
-            }
-        }
+        calculateService.awaitAndTerminate();
+        finishCounter = resultService.getTotal();
 
         long end = System.currentTimeMillis();
 
         System.out.println("Total success checks: " + finishCounter);
         System.out.println("Time: " + (end - start)  + " ms");
+
+    }
+
+    private static void runDownloads(NotificationManager<DownloadResult> notificationManagerDowload) throws InterruptedException {
+        ExecutorService service = Executors.newFixedThreadPool(3000);
+
+        for (int i = 0; i < 3000; i++) {
+            Download task = new Download(i, notificationManagerDowload);
+            service.submit(task);
+        }
+        service.shutdown();
+
+        service.awaitTermination(1, TimeUnit.HOURS);
     }
 }
